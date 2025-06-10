@@ -72,7 +72,7 @@ class AppRouter {
         },
       ),
       
-      // Ruta de captura facial
+      // // Ruta de captura facial
       GoRoute(
         path: AppRoutes.facialCapture,
         name: AppRoutes.facialCaptureName,
@@ -90,7 +90,7 @@ class AppRouter {
           final isRegistration = state.uri.queryParameters['registration'] == 'true';
           return FingerprintCaptureScreen(isRegistration: isRegistration);
         },
-      ),
+      ), 
       
       // Ruta de acceso concedido
       GoRoute(
