@@ -6,6 +6,7 @@ import '../screens/splash_screen.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/method_selection_screen.dart';
 import '../screens/facial_capture_screen.dart';
+import '../screens/fingerprint_capture_screen.dart';
 import '../screens/access_granted_screen.dart';
 import '../screens/access_denied_screen.dart';
 
@@ -71,13 +72,23 @@ class AppRouter {
         },
       ),
       
-      // // Ruta de captura facial
+      // Ruta de captura facial
       GoRoute(
         path: AppRoutes.facialCapture,
         name: AppRoutes.facialCaptureName,
         builder: (context, state) {
           final isRegistration = state.uri.queryParameters['registration'] == 'true';
           return FacialCaptureScreen(isRegistration: isRegistration);
+        },
+      ),
+      
+      // Ruta de captura de huella dactilar
+      GoRoute(
+        path: AppRoutes.fingerprintCapture,
+        name: AppRoutes.fingerprintCaptureName,
+        builder: (context, state) {
+          final isRegistration = state.uri.queryParameters['registration'] == 'true';
+          return FingerprintCaptureScreen(isRegistration: isRegistration);
         },
       ),
       

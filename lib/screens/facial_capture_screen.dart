@@ -146,8 +146,8 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
       await Future.delayed(const Duration(seconds: 2));
       
       if (mounted) {
-        
-        final isSuccess = false;
+        // Simular éxito en el 80% de los casos
+        final isSuccess = DateTime.now().millisecond % 10 < 8;
         
         if (isSuccess) {
           context.goToAccessGranted(

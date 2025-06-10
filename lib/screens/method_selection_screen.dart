@@ -77,10 +77,10 @@ class MethodSelectionScreen extends StatelessWidget {
                         context,
                         icon: Icons.fingerprint,
                         title: 'Huella Dactilar',
-                        description: 'Utiliza la cámara para escanear\ntu huella dactilar',
+                        description: 'Utiliza el sensor biométrico para\nverificar tu huella dactilar',
                         color: const Color(0xFF2196F3),
                         onTap: () {
-                          _showComingSoonDialog(context, 'Huella Dactilar');
+                          context.goToFingerprintCapture(isRegistration: false);
                         },
                       ),
                       

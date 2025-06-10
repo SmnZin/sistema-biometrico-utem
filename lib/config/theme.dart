@@ -10,6 +10,9 @@ class AppTheme {
   static const Color secondaryColor = Color(0xFF4FC3F7);    // Azul celeste
   static const Color accentColor = Color(0xFFFF6F00);       // Naranja UTEM
   static const Color accentLight = Color(0xFFFF9E40);       // Naranja claro
+  static const Color textColor = Color(0xFF212121);       // Texto principal
+  static const Color textLight = Color(0xFF757575);       // Texto secundario
+  static const Color borderColor = Color(0xFFBDBDBD);      // Color de borde
   
   // Colores de estado
   static const Color successColor = Color(0xFF4CAF50);      // Verde éxito
