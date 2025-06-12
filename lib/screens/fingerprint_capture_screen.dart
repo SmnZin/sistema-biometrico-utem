@@ -87,59 +87,67 @@ class _FingerprintCaptureScreenState extends State<FingerprintCaptureScreen>
 
   // Verificar si el dispositivo soporta biometr�a y tiene huellas registradas
   Future<void> _checkBiometricSupport() async {
-    try {
-      // Verificar si el dispositivo soporta biometr�a
-      final bool isAvailable = await _localAuth.canCheckBiometrics;
-      
-      if (!isAvailable) {
-        setState(() {
-          _currentState = FingerprintState.error;
-          _errorMessage = 'Este dispositivo no soporta autenticación biometrica';
-          _statusMessage = 'Biometría no disponible';
-        });
-        return;
-      }
+  try {
+    // DIAGNÓSTICO: mostrar sensores detectados y disponibilidad
+    final biometrics = await _localAuth.getAvailableBiometrics();
+    final canCheck = await _localAuth.canCheckBiometrics;
 
-      // Verificar si hay biom�tricos disponibles (incluye huella dactilar)
-      final List<BiometricType> availableBiometrics = 
-          await _localAuth.getAvailableBiometrics();
-      
-      if (availableBiometrics.isEmpty) {
-        setState(() {
-          _currentState = FingerprintState.error;
-          _errorMessage = 'No hay métodos biometricos configurados en este dispositivo';
-          _statusMessage = 'Sin biometricos configurados';
-        });
-        return;
-      }
+    print('Biométricos disponibles: $biometrics');
+    print('¿Puede verificar biometría?: $canCheck');
 
-      // Verificar espec�ficamente si hay huella dactilar disponible
-      final bool hasFingerprintSupport = availableBiometrics.contains(BiometricType.fingerprint);
-      
-      if (!hasFingerprintSupport) {
-        setState(() {
-          _currentState = FingerprintState.error;
-          _errorMessage = 'El sensor de huella dactilar no está disponible';
-          _statusMessage = 'Sensor de huella no disponible';
-        });
-        return;
-      }
+    setState(() {
+      _statusMessage = 'Sensores disponibles: $biometrics | Puede verificar: $canCheck';
+    });
 
-      // Si todo est� bien, mostrar estado inicial
-      setState(() {
-        _currentState = FingerprintState.initial;
-        _statusMessage = 'Sensor de huella dactilar disponible';
-        _errorMessage = '';
-      });
+    // Verificar si el dispositivo soporta biometría
+    final bool isAvailable = canCheck;
 
-    } catch (e) {
+    if (!isAvailable) {
       setState(() {
         _currentState = FingerprintState.error;
-        _errorMessage = 'Error al verificar el sensor biométrico: $e';
-        _statusMessage = 'Error de verificación';
+        _errorMessage = 'Este dispositivo no soporta autenticación biométrica';
+        _statusMessage = 'Biometría no disponible';
       });
+      return;
     }
+
+    // Verificar si hay biométricos disponibles
+    if (biometrics.isEmpty) {
+      setState(() {
+        _currentState = FingerprintState.error;
+        _errorMessage = 'No hay métodos biométricos configurados en este dispositivo';
+        _statusMessage = 'Sin biométricos configurados';
+      });
+      return;
+    }
+
+    // Verificar si hay huella dactilar específicamente
+    final bool hasFingerprintSupport = biometrics.contains(BiometricType.strong);
+
+    if (!hasFingerprintSupport) {
+      setState(() {
+        _currentState = FingerprintState.error;
+        _errorMessage = 'El sensor de huella dactilar no está disponible';
+        _statusMessage = 'Sensor de huella no disponible';
+      });
+      return;
+    }
+
+    // Todo OK
+    setState(() {
+      _currentState = FingerprintState.initial;
+      _statusMessage = 'Sensor de huella dactilar disponible';
+      _errorMessage = '';
+    });
+  } catch (e) {
+    setState(() {
+      _currentState = FingerprintState.error;
+      _errorMessage = 'Error al verificar el sensor biométrico: $e';
+      _statusMessage = 'Error de verificación';
+    });
   }
+}
+
 
   // Iniciar el proceso de autenticaci�n biom�trica
   Future<void> _startFingerprintAuthentication() async {
