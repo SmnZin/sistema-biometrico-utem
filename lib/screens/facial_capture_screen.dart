@@ -3,6 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import '../config/routes.dart';
+import '../services/simple_image_upload_service.dart';
+
 
 class FacialCaptureScreen extends StatefulWidget {
   final bool isRegistration;
@@ -130,46 +132,70 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
   }
 
   Future<void> _captureImage() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
+  if (_cameraController == null || !_cameraController!.value.isInitialized) {
+    return;
+  }
 
+  setState(() {
+    _isCapturing = true;
+    _instructions = "Capturando imagen...";
+  });
+
+  try {
+    // 1. Capturar imagen
+    final image = await _cameraController!.takePicture();
+    
     setState(() {
-      _isCapturing = true;
-      _instructions = "Capturando imagen...";
+      _instructions = "Verificando servidor...";
     });
-
-    try {
-      final image = await _cameraController!.takePicture();
-      
-      // Simulación de procesamiento
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        // Simular éxito en el 80% de los casos
-        final isSuccess = DateTime.now().millisecond % 10 < 8;
-        
-        if (isSuccess) {
-          context.goToAccessGranted(
-            userName: widget.isRegistration ? 'Usuario Registrado' : 'Juan Pérez',
-            method: 'Facial',
-            confidence: _imageQuality * 100,
-          );
-        } else {
-          context.goToAccessDenied(
-            reason: 'Rostro no reconocido',
-            method: 'Facial',
-          );
-        }
-      }
-    } catch (e) {
+    
+    // 2. Verificar que el servidor esté disponible
+    final serverAvailable = await SimpleImageUploadService.isServerAvailable();
+    if (!serverAvailable) {
+      throw Exception('Servidor de Colab no disponible. Verifica la URL: ${SimpleImageUploadService.baseUrl}');
+    }
+    
+    setState(() {
+      _instructions = "Enviando imagen al servidor...";
+    });
+    
+    // 3. Subir imagen al servidor
+    final uploadResult = await SimpleImageUploadService.uploadImage(
+      capturedImage: image,
+      isRegistration: widget.isRegistration,
+    );
+    
+    // 4. Procesar resultado
+    if (mounted) {
       setState(() {
         _isCapturing = false;
-        _instructions = "Error en la captura. Inténtalo de nuevo";
       });
-      _showErrorDialog('Error al capturar imagen: $e');
+      
+      if (uploadResult.success) {
+        // ✅ Imagen subida exitosamente
+        _showSuccessDialog(uploadResult);
+        
+        // Simular reconocimiento exitoso (hasta que tengas el modelo de IA)
+        context.goToAccessGranted(
+          userName: widget.isRegistration ? 'Usuario Registrado' : 'Usuario Reconocido',
+          method: 'Facial (Servidor Colab)',
+          confidence: 95.0, // Simulado por ahora
+        );
+      } else {
+        // ❌ Error al subir imagen
+        _showErrorDialog(uploadResult.message);
+      }
     }
+    
+  } catch (e) {
+    setState(() {
+      _isCapturing = false;
+      _instructions = "Error. Inténtalo de nuevo";
+    });
+    
+    _showErrorDialog('Error: ${e.toString()}');
   }
+}
 
   void _showPermissionDialog() {
     showDialog(
@@ -199,6 +225,35 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
       ),
     );
   }
+
+  void _showSuccessDialog(ImageUploadResult result) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('✅ Imagen Enviada'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('✅ ${result.message}'),
+          const SizedBox(height: 8),
+          if (result.filename != null) 
+            Text('📁 Archivo: ${result.filename}', 
+                 style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 8),
+          Text('⏱️ ${result.performanceInfo}', 
+               style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
 
   void _showErrorDialog(String message) {
     showDialog(
