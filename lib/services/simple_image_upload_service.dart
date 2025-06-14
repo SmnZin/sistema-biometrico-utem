@@ -106,12 +106,17 @@ class SimpleImageUploadService {
         final jsonData = jsonDecode(response.body);
         
         if (jsonData['status'] == 'success') {
+          final double? distancia = jsonData['distance'] != null
+              ? double.tryParse(jsonData['distance'].toString())
+              : null;
+
           return ImageUploadResult.success(
-            message: jsonData['message'] ?? 'Imagen subida exitosamente',
+            message: jsonData['message'] ?? 'Imagen verificada exitosamente',
             serverPath: jsonData['saved_path'],
             filename: jsonData['filename'],
             uploadTimeMs: uploadTimeMs,
             fileSizeBytes: fileSize,
+            distance: distancia,
           );
         } else {
           return ImageUploadResult.error(
@@ -166,6 +171,7 @@ class ImageUploadResult {
   final String? filename;
   final int uploadTimeMs;
   final int? fileSizeBytes;
+  final double? distance;
   final String? errorDetails;
 
   ImageUploadResult._({
@@ -175,16 +181,17 @@ class ImageUploadResult {
     this.filename,
     required this.uploadTimeMs,
     this.fileSizeBytes,
+    this.distance,
     this.errorDetails,
   });
 
-  /// Constructor para casos exitosos
   factory ImageUploadResult.success({
     required String message,
     String? serverPath,
     String? filename,
     required int uploadTimeMs,
     required int fileSizeBytes,
+    double? distance,
   }) {
     return ImageUploadResult._(
       success: true,
@@ -193,10 +200,10 @@ class ImageUploadResult {
       filename: filename,
       uploadTimeMs: uploadTimeMs,
       fileSizeBytes: fileSizeBytes,
+      distance: distance,
     );
   }
 
-  /// Constructor para errores
   factory ImageUploadResult.error(
     String errorMessage,
     int uploadTimeMs,
@@ -209,15 +216,13 @@ class ImageUploadResult {
     );
   }
 
-  /// Información de rendimiento para mostrar al usuario
   String get performanceInfo {
-    final fileSize = fileSizeBytes != null 
+    final fileSize = fileSizeBytes != null
         ? SimpleImageUploadService._formatFileSize(fileSizeBytes!)
         : 'N/A';
     return 'Tiempo: ${uploadTimeMs}ms | Tamaño: $fileSize';
   }
 
-  /// Para logging y debugging
   Map<String, dynamic> toJson() {
     return {
       'success': success,
@@ -226,6 +231,7 @@ class ImageUploadResult {
       'filename': filename,
       'upload_time_ms': uploadTimeMs,
       'file_size_bytes': fileSizeBytes,
+      'distance': distance,
       'error_details': errorDetails,
     };
   }
