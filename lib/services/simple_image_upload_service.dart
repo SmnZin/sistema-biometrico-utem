@@ -9,8 +9,10 @@ import 'dart:convert';
 /// Compatible con el endpoint /upload-image que creaste
 class SimpleImageUploadService {
   // URL de tu servidor ngrok
-  static const String baseUrl = 'url_de_tu_ngrok'; // Cambia esto por tu URL real
-  static const String uploadEndpoint = '/upload-image';
+  //static const String baseUrl = 'url_de_tu_ngrok'; // Cambia esto por tu URL real
+  static const String baseUrl = 'https://a191-34-148-247-94.ngrok-free.app';
+  static const String huellaEndpoint = '/upload-fingerprint'; // nuevo endpoint para huellas
+  static const String facialEndpoint = '/upload-image';
   
   /// Sube imagen al servidor usando multipart/form-data
   /// 
@@ -20,6 +22,7 @@ class SimpleImageUploadService {
   /// Retorna [ImageUploadResult] con el resultado
   static Future<ImageUploadResult> uploadImage({
     required XFile capturedImage,
+    required String imageType,
     bool isRegistration = false,
   }) async {
     final uploadStopwatch = Stopwatch()..start();
@@ -32,7 +35,11 @@ class SimpleImageUploadService {
       }
       
       // 2. Crear petición multipart
-      final uri = Uri.parse('$baseUrl$uploadEndpoint');
+      final endpoint = imageType.toLowerCase() == 'huella'
+        ? huellaEndpoint
+        : facialEndpoint;
+
+      final uri = Uri.parse('$baseUrl$endpoint');
       final request = http.MultipartRequest('POST', uri);
       
       // 3. Agregar headers necesarios para ngrok
@@ -53,6 +60,7 @@ class SimpleImageUploadService {
       request.fields['operation'] = isRegistration ? 'register' : 'recognize';
       request.fields['timestamp'] = DateTime.now().toIso8601String();
       request.fields['device'] = Platform.operatingSystem;
+      request.fields['image_type'] = imageType;
       
       // 6. Enviar petición
       print('📤 Enviando imagen al servidor: $uri');
@@ -106,12 +114,17 @@ class SimpleImageUploadService {
         final jsonData = jsonDecode(response.body);
         
         if (jsonData['status'] == 'success') {
+          final double? distancia = jsonData['distance'] != null
+              ? double.tryParse(jsonData['distance'].toString())
+              : null;
+
           return ImageUploadResult.success(
-            message: jsonData['message'] ?? 'Imagen subida exitosamente',
+            message: jsonData['message'] ?? 'Imagen verificada exitosamente',
             serverPath: jsonData['saved_path'],
             filename: jsonData['filename'],
             uploadTimeMs: uploadTimeMs,
             fileSizeBytes: fileSize,
+            distance: distancia,
           );
         } else {
           return ImageUploadResult.error(
@@ -166,6 +179,7 @@ class ImageUploadResult {
   final String? filename;
   final int uploadTimeMs;
   final int? fileSizeBytes;
+  final double? distance;
   final String? errorDetails;
 
   ImageUploadResult._({
@@ -175,16 +189,17 @@ class ImageUploadResult {
     this.filename,
     required this.uploadTimeMs,
     this.fileSizeBytes,
+    this.distance,
     this.errorDetails,
   });
 
-  /// Constructor para casos exitosos
   factory ImageUploadResult.success({
     required String message,
     String? serverPath,
     String? filename,
     required int uploadTimeMs,
     required int fileSizeBytes,
+    double? distance,
   }) {
     return ImageUploadResult._(
       success: true,
@@ -193,10 +208,10 @@ class ImageUploadResult {
       filename: filename,
       uploadTimeMs: uploadTimeMs,
       fileSizeBytes: fileSizeBytes,
+      distance: distance,
     );
   }
 
-  /// Constructor para errores
   factory ImageUploadResult.error(
     String errorMessage,
     int uploadTimeMs,
@@ -209,15 +224,13 @@ class ImageUploadResult {
     );
   }
 
-  /// Información de rendimiento para mostrar al usuario
   String get performanceInfo {
-    final fileSize = fileSizeBytes != null 
+    final fileSize = fileSizeBytes != null
         ? SimpleImageUploadService._formatFileSize(fileSizeBytes!)
         : 'N/A';
     return 'Tiempo: ${uploadTimeMs}ms | Tamaño: $fileSize';
   }
 
-  /// Para logging y debugging
   Map<String, dynamic> toJson() {
     return {
       'success': success,
@@ -226,6 +239,7 @@ class ImageUploadResult {
       'filename': filename,
       'upload_time_ms': uploadTimeMs,
       'file_size_bytes': fileSizeBytes,
+      'distance': distance,
       'error_details': errorDetails,
     };
   }

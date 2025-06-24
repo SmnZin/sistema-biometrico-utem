@@ -151,6 +151,7 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
     // 3. Subir imagen al servidor
     final uploadResult = await SimpleImageUploadService.uploadImage(
       capturedImage: image,
+      imageType: 'facial',
       isRegistration: widget.isRegistration,
     );
     
