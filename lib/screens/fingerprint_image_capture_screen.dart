@@ -3,8 +3,10 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:math' as math;
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../config/routes.dart';
-import '../services/simple_image_upload_service.dart';
+import '../services/fingerprint_recognition_service.dart';
 
 class FingerprintImageCaptureScreen extends StatefulWidget {
   final bool isRegistration;
@@ -24,6 +26,8 @@ class _FingerprintImageCaptureScreenState extends State<FingerprintImageCaptureS
   bool _isCameraInitialized = false;
   bool _isCapturing = false;
   String _instructions = "Coloca una imagen de tu huella dactilar en el centro del círculo";
+  bool _isUsingBackCamera = true;
+  final ImagePicker _imagePicker = ImagePicker();
   
 
   @override
@@ -49,13 +53,18 @@ class _FingerprintImageCaptureScreenState extends State<FingerprintImageCaptureS
       }
 
       // Usar cámara trasera para mejor calidad de captura
-      final backCamera = _cameras!.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
-        orElse: () => _cameras!.first,
-      );
+      final camera = _isUsingBackCamera 
+          ? _cameras!.firstWhere(
+              (camera) => camera.lensDirection == CameraLensDirection.back,
+              orElse: () => _cameras!.first,
+            )
+          : _cameras!.firstWhere(
+              (camera) => camera.lensDirection == CameraLensDirection.front,
+              orElse: () => _cameras!.first,
+            );
 
       _cameraController = CameraController(
-        backCamera,
+        camera,
         ResolutionPreset.high,
         enableAudio: false,
       );
@@ -72,73 +81,177 @@ class _FingerprintImageCaptureScreenState extends State<FingerprintImageCaptureS
     }
   }
 
+  Future<void> _toggleCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+    
+    setState(() {
+      _isUsingBackCamera = !_isUsingBackCamera;
+      _isCameraInitialized = false;
+    });
+    
+    await _cameraController?.dispose();
+    await _initializeCamera();
+  }
 
-  Future<void> _captureImage() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+  Future<void> _uploadImage() async {
+  try {
+    // 1. Seleccionar imagen de la galería
+    final XFile? image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85, // Buena calidad para el análisis
+      maxWidth: 1024,   // Limitar tamaño para optimizar envío
+      maxHeight: 1024,
+    );
+    
+    if (image == null) {
+      // Usuario canceló la selección
       return;
     }
-
+    
     setState(() {
       _isCapturing = true;
-      _instructions = "Capturando imagen...";
+      _instructions = "Verificando servidor...";
     });
-
-    try {
-      // 1. Capturar imagen
-      final image = await _cameraController!.takePicture();
-      
-      setState(() {
-        _instructions = "Verificando servidor...";
-      });
-      
-      // 2. Verificar que el servidor esté disponible
-      final serverAvailable = await SimpleImageUploadService.isServerAvailable();
-      if (!serverAvailable) {
-        throw Exception('Servidor de Colab no disponible. Verifica la URL: ${SimpleImageUploadService.baseUrl}');
-      }
-      
-      setState(() {
-        _instructions = "Enviando imagen al servidor...";
-      });
-      
-      // 3. Subir imagen al servidor
-      final uploadResult = await SimpleImageUploadService.uploadImage(
-        capturedImage: image,
-        imageType: 'huella',
-        isRegistration: widget.isRegistration,
-      );
-      
-      // 4. Procesar resultado
-      if (mounted) {
-        setState(() {
-          _isCapturing = false;
-        });
-        
-        if (uploadResult.success) {
-          // ✅ Imagen subida exitosamente
-          _showSuccessDialog(uploadResult);
-          
-          // Simular reconocimiento exitoso (hasta que tengas el modelo de IA)
-          context.goToAccessGranted(
-            userName: widget.isRegistration ? 'Usuario Registrado' : 'Usuario Reconocido',
-            method: 'Huella Dactilar (Servidor Colab)',
-            confidence: 92.0, // Simulado por ahora
-          );
-        } else {
-          // ❌ Error al subir imagen
-          _showErrorDialog(uploadResult.message);
-        }
-      }
-      
-    } catch (e) {
+    
+    // 2. Verificar que el servidor esté disponible
+    final serverAvailable = await FingerprintRecognitionService.isServerAvailable();
+    if (!serverAvailable) {
+      throw Exception('Servidor de huellas dactilares no disponible. Verifica la conexión.');
+    }
+    
+    setState(() {
+      _instructions = "Procesando huella dactilar desde galería...";
+    });
+    
+    // 3. Enviar imagen para reconocimiento
+    final fingerprintResult = await FingerprintRecognitionService.recognizeFingerprint(
+      capturedImage: image,
+      isRegistration: widget.isRegistration,
+    );
+    
+    // 4. Procesar resultado completo
+    if (mounted) {
       setState(() {
         _isCapturing = false;
-        _instructions = "Error. Inténtalo de nuevo";
+        _instructions = fingerprintResult.userMessage;
       });
       
-      _showErrorDialog('Error: ${e.toString()}');
+      if (fingerprintResult.success) {
+        if (fingerprintResult.shouldGrantAccess) {
+          // ✅ Acceso autorizado - navegar a pantalla de éxito
+          context.goToAccessGranted(
+            userName: fingerprintResult.personName ?? 'Usuario Reconocido',
+            method: 'Huella Dactilar (Galería + IA)',
+            confidence: fingerprintResult.confidence,
+          );
+        } else {
+          // ❌ Acceso denegado - navegar a pantalla de acceso denegado
+          context.goToAccessDenied(
+            reason: 'Huella dactilar no reconocida (Confianza: ${fingerprintResult.confidence.toStringAsFixed(1)}%)',
+            method: 'Huella Dactilar (Galería + IA)',
+          );
+        }
+      } else {
+        // ❌ Error en el procesamiento - navegar a pantalla de acceso denegado
+        context.goToAccessDenied(
+          reason: 'Error en el procesamiento: ${fingerprintResult.message}',
+          method: 'Huella Dactilar (Galería + IA)',
+        );
+      }
     }
+    
+  } catch (e) {
+    setState(() {
+      _isCapturing = false;
+      _instructions = "Error. Inténtalo de nuevo";
+    });
+    
+    context.goToAccessDenied(
+      reason: 'Error en el procesamiento: ${e.toString()}',
+      method: 'Huella Dactilar (Galería + IA)',
+    );
   }
+}
+
+
+Future<void> _captureImage() async {
+  if (_cameraController == null || !_cameraController!.value.isInitialized) {
+    return;
+  }
+
+  setState(() {
+    _isCapturing = true;
+    _instructions = "Capturando imagen...";
+  });
+
+  try {
+    // 1. Capturar imagen
+    final image = await _cameraController!.takePicture();
+    
+    setState(() {
+      _instructions = "Verificando servidor...";
+    });
+    
+    // 2. Verificar que el servidor esté disponible
+    final serverAvailable = await FingerprintRecognitionService.isServerAvailable();
+    if (!serverAvailable) {
+      throw Exception('Servidor de huellas dactilares no disponible. Verifica la conexión.');
+    }
+    
+    setState(() {
+      _instructions = "Procesando huella dactilar...";
+    });
+    
+    // 3. Enviar imagen para reconocimiento
+    final fingerprintResult = await FingerprintRecognitionService.recognizeFingerprint(
+      capturedImage: image,
+      isRegistration: widget.isRegistration,
+    );
+    
+    // 4. Procesar resultado
+    if (mounted) {
+      setState(() {
+        _isCapturing = false;
+        _instructions = fingerprintResult.userMessage;
+      });
+      
+      if (fingerprintResult.success) {
+        if (fingerprintResult.shouldGrantAccess) {
+          // ✅ Acceso autorizado - navegar a pantalla de éxito
+          context.goToAccessGranted(
+            userName: fingerprintResult.personName ?? 'Usuario Reconocido',
+            method: 'Huella Dactilar (IA)',
+            confidence: fingerprintResult.confidence,
+          );
+        } else {
+          // ❌ Acceso denegado - navegar a pantalla de acceso denegado
+          context.goToAccessDenied(
+            reason: 'Huella dactilar no reconocida (Confianza: ${fingerprintResult.confidence.toStringAsFixed(1)}%)',
+            method: 'Huella Dactilar (IA)',
+          );
+        }
+      } else {
+        // ❌ Error en el procesamiento - navegar a pantalla de acceso denegado
+        context.goToAccessDenied(
+          reason: 'Error en el procesamiento: ${fingerprintResult.message}',
+          method: 'Huella Dactilar (IA)',
+        );
+      }
+    }
+    
+  } catch (e) {
+    setState(() {
+      _isCapturing = false;
+      _instructions = "Error. Inténtalo de nuevo";
+    });
+    
+    context.goToAccessDenied(
+      reason: 'Error en el procesamiento: ${e.toString()}',
+      method: 'Huella Dactilar (IA)',
+    );
+  }
+}
+
 
   void _showPermissionDialog() {
     showDialog(
@@ -169,51 +282,12 @@ class _FingerprintImageCaptureScreenState extends State<FingerprintImageCaptureS
     );
   }
 
-  void _showSuccessDialog(ImageUploadResult result) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('✅ Imagen Enviada'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('✅ ${result.message}'),
-            const SizedBox(height: 8),
-            if (result.filename != null) 
-              Text('📁 Archivo: ${result.filename}', 
-                   style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text('⏱️ ${result.performanceInfo}', 
-                 style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.goBack();
-            },
-            child: const Text('Volver'),
-          ),
-        ],
-      ),
+    context.goToAccessDenied(
+      reason: message,
+      method: 'Huella Dactilar',
     );
   }
 
@@ -330,8 +404,24 @@ class _FingerprintImageCaptureScreenState extends State<FingerprintImageCaptureS
                 color: Colors.red,
               ),
               
+              // Botón cambiar cámara
+              _buildControlButton(
+                icon: Icons.flip_camera_ios,
+                label: 'Cambiar',
+                onTap: _toggleCamera,
+                color: Colors.purple,
+              ),
+              
               // Botón capturar
               _buildCaptureButton(),
+              
+              // Botón subir imagen
+              _buildControlButton(
+                icon: Icons.photo_library,
+                label: 'Galería',
+                onTap: _uploadImage,
+                color: Colors.orange,
+              ),
               
               // Botón información
               _buildControlButton(

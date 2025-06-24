@@ -26,6 +26,8 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
   bool _isCapturing = false;
   bool _faceDetected = false;
   String _instructions = "Coloca tu rostro dentro del marco";
+  int _currentCameraIndex = 0;
+  bool _isSwitchingCamera = false;
   
   // Animaciones
   late AnimationController _pulseController;
@@ -83,14 +85,16 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
         return;
       }
 
-      // Buscar cámara frontal
-      final frontCamera = _cameras!.firstWhere(
+      // Buscar cámara frontal por defecto
+      _currentCameraIndex = _cameras!.indexWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => _cameras!.first,
       );
+      if (_currentCameraIndex == -1) {
+        _currentCameraIndex = 0;
+      }
 
       _cameraController = CameraController(
-        frontCamera,
+        _cameras![_currentCameraIndex],
         ResolutionPreset.high,
         enableAudio: false,
       );
@@ -105,6 +109,46 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
       }
     } catch (e) {
       _showErrorDialog('Error al inicializar la cámara: $e');
+    }
+  }
+
+  Future<void> _switchCamera() async {
+    if (_cameras == null || _cameras!.length < 2 || _isSwitchingCamera) {
+      return;
+    }
+
+    setState(() {
+      _isSwitchingCamera = true;
+      _instructions = "Cambiando cámara...";
+    });
+
+    try {
+      await _cameraController?.dispose();
+      
+      _currentCameraIndex = (_currentCameraIndex + 1) % _cameras!.length;
+      
+      _cameraController = CameraController(
+        _cameras![_currentCameraIndex],
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isSwitchingCamera = false;
+          _instructions = "Coloca tu rostro dentro del marco";
+          _faceDetected = false;
+        });
+        _startFaceDetectionSimulation();
+      }
+    } catch (e) {
+      setState(() {
+        _isSwitchingCamera = false;
+        _instructions = "Error al cambiar cámara";
+      });
+      _showErrorDialog('Error al cambiar cámara: $e');
     }
   }
 
@@ -383,6 +427,18 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
                 color: Colors.red,
               ),
               
+              // Botón cambiar cámara
+              _buildControlButton(
+                icon: Icons.flip_camera_ios,
+                label: 'Cambiar',
+                onTap: _cameras != null && _cameras!.length > 1 && !_isSwitchingCamera
+                    ? _switchCamera
+                    : null,
+                color: _cameras != null && _cameras!.length > 1
+                    ? Colors.orange
+                    : Colors.grey,
+              ),
+              
               // Botón capturar
               _buildCaptureButton(),
               
@@ -439,7 +495,7 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
   Widget _buildControlButton({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     required Color color,
   }) {
     return GestureDetector(
@@ -454,7 +510,16 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
               color: color.withOpacity(0.2),
               border: Border.all(color: color, width: 2),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: _isSwitchingCamera && icon == Icons.flip_camera_ios
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.orange,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 4),
           Text(

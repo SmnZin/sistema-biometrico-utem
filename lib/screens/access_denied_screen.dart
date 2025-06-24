@@ -326,7 +326,7 @@ class _AccessDeniedScreenState extends State<AccessDeniedScreen>
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => context.goToMethodSelection(),
+                        onPressed: () => context.goToFingerprintImageCapture(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: AppTheme.errorColor,
@@ -350,7 +350,7 @@ class _AccessDeniedScreenState extends State<AccessDeniedScreen>
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          context.goToFacialCapture(isRegistration: false);
+                          context.goToMethodSelection();
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
@@ -362,7 +362,7 @@ class _AccessDeniedScreenState extends State<AccessDeniedScreen>
                         ),
                         icon: Icon(_getMethodIcon()),
                         label: Text(
-                          'Reintentar ${widget.method}',
+                          'Seleccionar otro metodo',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../config/routes.dart';
+import '../config/theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -64,12 +65,20 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: 
+              const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppTheme.gradientStart, AppTheme.gradientEnd],
+              ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
               // Logo animado
               AnimatedBuilder(
                 animation: _animationController,
@@ -95,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: const Icon(
                           Icons.security,
                           size: 60,
-                          color: Color(0xFF1565C0),
+                          color: AppTheme.gradientStart,
                         ),
                       ),
                     ),
@@ -167,8 +176,9 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   );
                 },
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

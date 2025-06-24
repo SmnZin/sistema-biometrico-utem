@@ -35,6 +35,10 @@ class AppTheme {
   static const Color facialColor = Color(0xFF4CAF50);       // Verde facial
   static const Color fingerprintColor = Color(0xFF2196F3);  // Azul huella
   
+  // Colores para gradiente teal
+  static const Color gradientStart = Color(0xFF33AFA0);     // Teal claro (arriba)
+  static const Color gradientEnd = Color(0xFF006A70);       // Teal oscuro (abajo)
+  
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -274,4 +278,13 @@ extension AppThemeExtension on ThemeData {
   Color get fingerprintColor => AppTheme.fingerprintColor;
   Color get textSecondary => AppTheme.textSecondary;
   Color get textHint => AppTheme.textHint;
+  Color get gradientStart => AppTheme.gradientStart;
+  Color get gradientEnd => AppTheme.gradientEnd;
+  
+  // Gradiente linear teal
+  LinearGradient get tealGradient => const LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [AppTheme.gradientStart, AppTheme.gradientEnd],
+  );
 }

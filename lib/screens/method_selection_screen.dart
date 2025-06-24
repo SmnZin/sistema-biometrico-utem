@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../config/routes.dart';
+import '../config/theme.dart';
 
 class MethodSelectionScreen extends StatelessWidget {
   const MethodSelectionScreen({super.key});
@@ -10,101 +11,120 @@ class MethodSelectionScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Método de Autenticación'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.go(AppRoutes.welcome),
         ),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              // Header
-              Expanded(
-                flex: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.security,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Selecciona el método\nde autenticación',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Elige cómo deseas verificar tu identidad',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Opciones de método - SOLUCIÓN: Usando Flexible y SingleChildScrollView
-              Expanded(
-                flex: 2,
-                child: SingleChildScrollView(
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppTheme.gradientStart, AppTheme.gradientEnd],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                // Header
+                Expanded(
+                  flex: 1,
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Reconocimiento facial
-                      _buildMethodCard(
-                        context,
-                        icon: Icons.face,
-                        title: 'Reconocimiento Facial',
-                        description: 'Utiliza la cámara frontal para\nidentificarte mediante tu rostro',
-                        color: const Color(0xFF4CAF50),
-                        onTap: () {
-                          context.goToFacialCapture(isRegistration: false);
-                        },
+                      Icon(Icons.security, size: 64, color: Colors.white),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Selecciona el método\nde autenticación',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              height: 1.2,
+                              color: Colors.white,
+                            ),
+                        textAlign: TextAlign.center,
                       ),
-                      
-                      const SizedBox(height: 16), // Reducido de 20 a 16
-                      
-                      // Huella dactilar
-                      _buildMethodCard(
-                        context,
-                        icon: Icons.fingerprint,
-                        title: 'Huella Dactilar (nativo)',
-                        description: 'Utiliza el sensor biométrico nativo para\nverificar tu huella dactilar',
-                        color: const Color(0xFF2196F3),
-                        onTap: () {
-                          context.goToFingerprintCapture(isRegistration: false);
-                        },
-                      ),
-                      
-                      const SizedBox(height: 16), // Reducido de 20 a 16
-                      
-                      // Captura de imagen de huella dactilar
-                      _buildMethodCard(
-                        context,
-                        icon: Icons.fingerprint,
-                        title: 'Huella Dactilar (imagen)',
-                        description: 'Utiliza la cámara para capturar\nuna imagen de tu huella dactilar',
-                        color: const Color(0xFF6A1B9A),
-                        onTap: () {
-                          context.goToFingerprintImageCapture(isRegistration: false);
-                        },
+                      const SizedBox(height: 8),
+                      Text(
+                        'Elige cómo deseas verificar tu identidad',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-              ),
-              
-              // Footer con opción de registro - SOLUCIÓN: Removido Expanded y usando tamaño fijo
-            
-            ],
+
+                // Opciones de método - SOLUCIÓN: Usando Flexible y SingleChildScrollView
+                Expanded(
+                  flex: 2,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Reconocimiento facial
+                        _buildMethodCard(
+                          context,
+                          icon: Icons.face,
+                          title: 'Reconocimiento Facial',
+                          description:
+                              'Utiliza la cámara frontal para\nidentificarte mediante tu rostro',
+                          color: const Color(0xFF4CAF50),
+                          onTap: () {
+                            context.goToFacialCapture(isRegistration: false);
+                          },
+                        ),
+
+                        const SizedBox(height: 16), // Reducido de 20 a 16
+                        // Huella dactilar
+                        _buildMethodCard(
+                          context,
+                          icon: Icons.fingerprint,
+                          title: 'Huella Dactilar (nativo)',
+                          description:
+                              'Utiliza el sensor biométrico nativo para\nverificar tu huella dactilar',
+                          color: const Color(0xFF2196F3),
+                          onTap: () {
+                            context.goToFingerprintCapture(
+                              isRegistration: false,
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 16), // Reducido de 20 a 16
+                        // Captura de imagen de huella dactilar
+                        _buildMethodCard(
+                          context,
+                          icon: Icons.fingerprint,
+                          title: 'Huella Dactilar (imagen)',
+                          description:
+                              'Utiliza la cámara para capturar\nuna imagen de tu huella dactilar',
+                          color: const Color(0xFF6A1B9A),
+                          onTap: () {
+                            context.goToFingerprintImageCapture(
+                              isRegistration: false,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Footer con opción de registro - SOLUCIÓN: Removido Expanded y usando tamaño fijo
+              ],
+            ),
           ),
         ),
       ),
@@ -121,15 +141,18 @@ class MethodSelectionScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          ),
           child: Row(
             children: [
               // Icono
@@ -140,15 +163,11 @@ class MethodSelectionScreen extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ),
+                child: Icon(icon, size: 32, color: color),
               ),
-              
+
               const SizedBox(width: 20),
-              
+
               // Contenido
               Expanded(
                 child: Column(
@@ -171,13 +190,9 @@ class MethodSelectionScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Flecha
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey[400],
-                size: 20,
-              ),
+              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 20),
             ],
           ),
         ),
