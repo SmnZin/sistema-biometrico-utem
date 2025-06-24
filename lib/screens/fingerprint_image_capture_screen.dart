@@ -104,6 +104,7 @@ class _FingerprintImageCaptureScreenState extends State<FingerprintImageCaptureS
       // 3. Subir imagen al servidor
       final uploadResult = await SimpleImageUploadService.uploadImage(
         capturedImage: image,
+        imageType: 'huella',
         isRegistration: widget.isRegistration,
       );
       

@@ -9,8 +9,10 @@ import 'dart:convert';
 /// Compatible con el endpoint /upload-image que creaste
 class SimpleImageUploadService {
   // URL de tu servidor ngrok
-  static const String baseUrl = 'url_de_tu_ngrok'; // Cambia esto por tu URL real
-  static const String uploadEndpoint = '/upload-image';
+  //static const String baseUrl = 'url_de_tu_ngrok'; // Cambia esto por tu URL real
+  static const String baseUrl = 'https://a191-34-148-247-94.ngrok-free.app';
+  static const String huellaEndpoint = '/upload-fingerprint'; // nuevo endpoint para huellas
+  static const String facialEndpoint = '/upload-image';
   
   /// Sube imagen al servidor usando multipart/form-data
   /// 
@@ -20,6 +22,7 @@ class SimpleImageUploadService {
   /// Retorna [ImageUploadResult] con el resultado
   static Future<ImageUploadResult> uploadImage({
     required XFile capturedImage,
+    required String imageType,
     bool isRegistration = false,
   }) async {
     final uploadStopwatch = Stopwatch()..start();
@@ -32,7 +35,11 @@ class SimpleImageUploadService {
       }
       
       // 2. Crear petición multipart
-      final uri = Uri.parse('$baseUrl$uploadEndpoint');
+      final endpoint = imageType.toLowerCase() == 'huella'
+        ? huellaEndpoint
+        : facialEndpoint;
+
+      final uri = Uri.parse('$baseUrl$endpoint');
       final request = http.MultipartRequest('POST', uri);
       
       // 3. Agregar headers necesarios para ngrok
@@ -53,6 +60,7 @@ class SimpleImageUploadService {
       request.fields['operation'] = isRegistration ? 'register' : 'recognize';
       request.fields['timestamp'] = DateTime.now().toIso8601String();
       request.fields['device'] = Platform.operatingSystem;
+      request.fields['image_type'] = imageType;
       
       // 6. Enviar petición
       print('📤 Enviando imagen al servidor: $uri');
