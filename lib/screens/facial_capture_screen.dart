@@ -25,7 +25,6 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
   bool _isCameraInitialized = false;
   bool _isCapturing = false;
   bool _faceDetected = false;
-  double _imageQuality = 0.0;
   String _instructions = "Coloca tu rostro dentro del marco";
   
   // Animaciones
@@ -115,17 +114,7 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
       if (mounted) {
         setState(() {
           _faceDetected = true;
-          _imageQuality = 0.75;
-          _instructions = "Rostro detectado - Mantente quieto";
-        });
-      }
-    });
-
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        setState(() {
-          _imageQuality = 0.85;
-          _instructions = "Buena calidad - Listo para capturar";
+          _instructions = "Posiciona tu rostro dentro del marco para mayor calidad";
         });
       }
     });
@@ -368,11 +357,6 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Indicador de calidad
-          _buildQualityIndicator(),
-          
-          const SizedBox(height: 16),
-          
           // Instrucciones
           Text(
             _instructions,
@@ -415,47 +399,10 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
     );
   }
 
-  Widget _buildQualityIndicator() {
-    Color qualityColor;
-    String qualityText;
-    
-    if (_imageQuality >= 0.8) {
-      qualityColor = Colors.green;
-      qualityText = 'Excelente';
-    } else if (_imageQuality >= 0.6) {
-      qualityColor = Colors.orange;
-      qualityText = 'Buena';
-    } else if (_imageQuality >= 0.4) {
-      qualityColor = Colors.yellow;
-      qualityText = 'Regular';
-    } else {
-      qualityColor = Colors.red;
-      qualityText = 'Insuficiente';
-    }
-
-    return Column(
-      children: [
-        Text(
-          'Calidad de imagen: $qualityText',
-          style: TextStyle(
-            color: qualityColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: _imageQuality,
-          backgroundColor: Colors.white.withOpacity(0.3),
-          valueColor: AlwaysStoppedAnimation<Color>(qualityColor),
-        ),
-      ],
-    );
-  }
 
   Widget _buildCaptureButton() {
     return GestureDetector(
-      onTap: _isCapturing || _imageQuality < 0.6 ? null : _captureImage,
+      onTap: _isCapturing ? null : _captureImage,
       child: AnimatedBuilder(
         animation: _pulseAnimation,
         builder: (context, child) {
@@ -468,7 +415,7 @@ class _FacialCaptureScreenState extends State<FacialCaptureScreen>
                 shape: BoxShape.circle,
                 color: _isCapturing 
                     ? Colors.grey 
-                    : (_imageQuality >= 0.6 ? Colors.green : Colors.grey),
+                    : (_faceDetected ? Colors.green : Colors.grey),
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: _isCapturing

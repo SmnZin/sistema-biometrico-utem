@@ -76,8 +76,8 @@ class MethodSelectionScreen extends StatelessWidget {
                       _buildMethodCard(
                         context,
                         icon: Icons.fingerprint,
-                        title: 'Huella Dactilar',
-                        description: 'Utiliza el sensor biométrico para\nverificar tu huella dactilar',
+                        title: 'Huella Dactilar (nativo)',
+                        description: 'Utiliza el sensor biométrico nativo para\nverificar tu huella dactilar',
                         color: const Color(0xFF2196F3),
                         onTap: () {
                           context.goToFingerprintCapture(isRegistration: false);
@@ -86,15 +86,15 @@ class MethodSelectionScreen extends StatelessWidget {
                       
                       const SizedBox(height: 16), // Reducido de 20 a 16
                       
-                      // Autenticación dual
+                      // Captura de imagen de huella dactilar
                       _buildMethodCard(
                         context,
-                        icon: Icons.enhanced_encryption,
-                        title: 'Autenticación Dual',
-                        description: 'Combina ambos métodos para\nmayor seguridad',
+                        icon: Icons.fingerprint,
+                        title: 'Huella Dactilar (imagen)',
+                        description: 'Utiliza la cámara para capturar\nuna imagen de tu huella dactilar',
                         color: const Color(0xFF6A1B9A),
                         onTap: () {
-                          _showComingSoonDialog(context, 'Autenticación Dual');
+                          context.goToFingerprintImageCapture(isRegistration: false);
                         },
                       ),
                     ],
@@ -103,25 +103,7 @@ class MethodSelectionScreen extends StatelessWidget {
               ),
               
               // Footer con opción de registro - SOLUCIÓN: Removido Expanded y usando tamaño fijo
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Divider(),
-                  const SizedBox(height: 12), // Reducido de 16 a 12
-                  Text(
-                    '¿Eres un usuario nuevo?',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () {
-                      _showComingSoonDialog(context, 'Registro de Usuario');
-                    },
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Registrarse aquí'),
-                  ),
-                ],
-              ),
+            
             ],
           ),
         ),

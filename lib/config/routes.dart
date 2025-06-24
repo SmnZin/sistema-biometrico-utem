@@ -7,6 +7,7 @@ import '../screens/welcome_screen.dart';
 import '../screens/method_selection_screen.dart';
 import '../screens/facial_capture_screen.dart';
 import '../screens/fingerprint_capture_screen.dart';
+import '../screens/fingerprint_image_capture_screen.dart';
 import '../screens/access_granted_screen.dart';
 import '../screens/access_denied_screen.dart';
 
@@ -82,13 +83,23 @@ class AppRouter {
         },
       ),
       
-      // Ruta de captura de huella dactilar
+      // Ruta de captura de huella dactilar (sensor biométrico)
       GoRoute(
         path: AppRoutes.fingerprintCapture,
         name: AppRoutes.fingerprintCaptureName,
         builder: (context, state) {
           final isRegistration = state.uri.queryParameters['registration'] == 'true';
           return FingerprintCaptureScreen(isRegistration: isRegistration);
+        },
+      ),
+      
+      // Ruta de captura de imagen de huella dactilar
+      GoRoute(
+        path: AppRoutes.fingerprintImageCapture,
+        name: AppRoutes.fingerprintImageCaptureName,
+        builder: (context, state) {
+          final isRegistration = state.uri.queryParameters['registration'] == 'true';
+          return FingerprintImageCaptureScreen(isRegistration: isRegistration);
         },
       ), 
       
@@ -174,6 +185,7 @@ class AppRoutes {
   // Rutas de captura biométrica
   static const String facialCapture = '/facial-capture';
   static const String fingerprintCapture = '/fingerprint-capture';
+  static const String fingerprintImageCapture = '/fingerprint-image-capture';
   static const String processing = '/processing';
   
   // Rutas de resultados
@@ -189,6 +201,7 @@ class AppRoutes {
   static const String settingsName = 'settings';
   static const String facialCaptureName = 'facialCapture';
   static const String fingerprintCaptureName = 'fingerprintCapture';
+  static const String fingerprintImageCaptureName = 'fingerprintImageCapture';
   static const String processingName = 'processing';
   static const String accessGrantedName = 'accessGranted';
   static const String accessDeniedName = 'accessDenied';
@@ -210,6 +223,10 @@ extension AppRouterExtension on BuildContext {
   
   void goToFingerprintCapture({bool isRegistration = false}) {
     go('${AppRoutes.fingerprintCapture}?registration=$isRegistration');
+  }
+  
+  void goToFingerprintImageCapture({bool isRegistration = false}) {
+    go('${AppRoutes.fingerprintImageCapture}?registration=$isRegistration');
   }
   
   void goToProcessing({
