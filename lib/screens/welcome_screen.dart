@@ -35,13 +35,13 @@ class WelcomeScreen extends StatelessWidget {
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Image.asset(
-                            'assets/images/logoUTEM.png',
+                            'assets/images/logoUTEM_blanco.png',
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
